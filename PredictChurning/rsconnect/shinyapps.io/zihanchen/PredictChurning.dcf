@@ -1,0 +1,13 @@
+name: PredictChurning
+title: PredictChurning
+username:
+account: zihanchen
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 8515523
+bundleId: 6932125
+url: https://zihanchen.shinyapps.io/PredictChurning/
+when: 1678296595.22305
+lastSyncTime: 1678296595.22306
+asMultiple: FALSE
+asStatic: FALSE
