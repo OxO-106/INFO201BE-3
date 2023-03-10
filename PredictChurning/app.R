@@ -4,15 +4,19 @@ library(tidyverse)
 # Define UI for application
 ui <- fluidPage(
   tabsetPanel(
+    # The landing page
     tabPanel(
       "About",
       h2("Purpose"),
       h2("Source"),
       h2("Image")
     ),
+    
+    # The financial perspective page
     tabPanel(
       "Financial",
       sidebarLayout(
+        # Sidebar layout with three groups of radio buttons
         sidebarPanel(
           radioButtons(
             "finBtn",
@@ -29,6 +33,8 @@ ui <- fluidPage(
           uiOutput("incomeBtn"),
           uiOutput("cardBtn")
         ),
+        
+        # Main panel with text and plot
         mainPanel(
           h2("Description"),
           verbatimTextOutput("info"),
@@ -37,23 +43,35 @@ ui <- fluidPage(
         )
       )
     ),
+    
+    # The social perspective page
     tabPanel(
       "Social"
     ),
+    
+    # The biological perspective page
     tabPanel(
       "Biological"
     ),
+    
+    # The conclusion page
     tabPanel(
       "Conclusion",
+      h2("Conclusion"),
+      h3("Financial Triats"),
+      verbatimTextOutput("fin_con"),
       tableOutput("fin_table1"),
-      tableOutput("fin_table2")
+      tableOutput("fin_table2"),
     )
   )
 )
+
 # Define server logic
 server <- function(input, output) {
+  # Reading the csv file
   churn <- read_delim('BankChurners.csv')
   
+  # Render the INCOME radio buttons
   output$incomeBtn <- renderUI({
     if (input$finBtn == "Income Category"){
       radioButtons(
@@ -65,6 +83,7 @@ server <- function(input, output) {
     }
   })
   
+  # Render the CARD radio buttons  
   output$cardBtn <- renderUI({
     if (input$finBtn == "Card Category"){
       radioButtons(
@@ -76,7 +95,9 @@ server <- function(input, output) {
     }
   })
   
+  # Render the histograms
   output$fin_plot <- renderPlot({
+    # Filter the income data according to radio button selection
     fin_dataIncome <- reactive({
       if (input$value == "Overview"){
         churn %>% 
@@ -111,6 +132,7 @@ server <- function(input, output) {
       }
     })
     
+    # Filter the card data based on radio  button selection
     fin_dataCard <- reactive({
       if (input$value == "Overview"){
         churn %>% 
@@ -140,6 +162,7 @@ server <- function(input, output) {
       }
     })
     
+    # Draw the graph based on Income/Card selection and Overview/etc. selection
     if (input$finBtn == "Income Category") {
       if (input$value == "Overview"){
         ggplot(data = fin_dataIncome(), mapping = aes(x = X, fill = as.factor(Attrition_Flag))) +
@@ -163,6 +186,7 @@ server <- function(input, output) {
     }
   })
   
+  # Render text description for financial page
   output$info <- renderPrint({
     cat("The histograms can show the difference between the financial situation of the existing and attritted customer.\n")
     cat("I chose two columns in our dataset that I believe could show the customer's financial situation. The columns \n")
@@ -171,6 +195,7 @@ server <- function(input, output) {
     cat("the common traits of churning customers.")
   })
   
+  # Filter data to show the ratio of attrited and existing customer based on income and card category
   fin_table1_data <- churn %>% 
     filter(Income_Category != "Unknown") %>% 
     group_by(Income_Category, Attrition_Flag) %>% 
@@ -184,6 +209,11 @@ server <- function(input, output) {
     summarise(Ratio_of_Attritted_and_Existing_Customer  = lag(count) / count) %>% 
     filter(!is.na(Ratio_of_Attritted_and_Existing_Customer))
   
+  output$fin_con <- renderPrint({
+    cat("There is no clear relationship between the income level of the customer and the probability of churning. However, customers with higher card level has more probability of churn.")
+  })
+  
+  # Render tables for conclusion page to show the relationship between income/card with churning behavior
   output$fin_table1 <- renderTable({
     fin_table1_data
   })
