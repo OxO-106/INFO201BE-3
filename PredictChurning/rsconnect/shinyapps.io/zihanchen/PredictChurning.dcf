@@ -5,9 +5,9 @@ account: zihanchen
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 8515523
-bundleId: 6939052
+bundleId: 6944293
 url: https://zihanchen.shinyapps.io/PredictChurning/
-when: 1678409510.43618
-lastSyncTime: 1678409510.43618
+when: 1678505713.91838
+lastSyncTime: 1678505713.91838
 asMultiple: FALSE
 asStatic: FALSE

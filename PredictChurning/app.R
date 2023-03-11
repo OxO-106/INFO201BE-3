@@ -4,18 +4,22 @@ library(tidyverse)
 # Define UI for application
 ui <- fluidPage(
   tabsetPanel(
+    
     # The landing page
     tabPanel(
       "About",
       h2("Purpose"),
+      verbatimTextOutput("purpose"),
       h2("Source"),
-      h2("Image")
+      verbatimTextOutput("source"),
+      img(src = 'Churn.png')
     ),
     
     # The financial perspective page
     tabPanel(
       "Financial",
       sidebarLayout(
+        
         # Sidebar layout with three groups of radio buttons
         sidebarPanel(
           radioButtons(
@@ -24,12 +28,14 @@ ui <- fluidPage(
             choices = c("Income Category", "Card Category"),
             selected = "Income Category"
           ),
+          
           radioButtons(
             "value",
             "Choose which data you wish to analysis",
             choices = c("Overview", "Credit Limit", "Average Ulitilization Ratio", "Months on book", "Total Transaction Amount"),
             selected = "Overview"
           ),
+          
           uiOutput("incomeBtn"),
           uiOutput("cardBtn")
         ),
@@ -47,6 +53,7 @@ ui <- fluidPage(
     # The social perspective page
     tabPanel(
       "Social",
+      
       # Sidebar layout with three widgets to filter conditions of interest such as
       #marital status,education level and number of dependents
       sidebarLayout(
@@ -73,22 +80,74 @@ ui <- fluidPage(
     
     # The biological perspective page
     tabPanel(
-      "Biological"
+      "Biological",
+      sidebarLayout(
+        sidebarPanel(
+          
+          #two radio buttons to affect the plot
+          #affecting gender and education level
+          radioButtons(
+            "identity",
+            "Select Gender",
+            choices= c("M","F"),
+            selected = "M"
+          ),
+          radioButtons(
+            "identity2",
+            "Select",
+            choices = c("Uneducated",
+                        "High School",
+                        "College",
+                        "Graduate",
+                        "Post-Graduate",
+                        "Doctorate"),
+            selected = "Uneducated"
+          )
+        ),
+        mainPanel(
+          
+          #the plot and description
+          h2("Description"),
+          verbatimTextOutput("description"),
+          h2("Histogram"),
+          plotOutput("bioPlot")
+        )
+      )
     ),
     
     # The conclusion page
     tabPanel(
       "Conclusion",
       h2("Conclusion"),
+      
+      # Financial part
       h3("Financial Triats"),
       verbatimTextOutput("fin_con"),
       tableOutput("fin_table1"),
       tableOutput("fin_table2"),
+      
+      # Social Traits
       h3("Social Traits"),
       verbatimTextOutput("social_con"),
       tableOutput("social_table1"),
       tableOutput("social_table2"),
-      tableOutput("social_table3")
+      tableOutput("social_table3"),
+      
+      # Biological Part
+      h3("Biological Traits"),
+      verbatimTextOutput("conclusion"),
+      h4("Age in relation to Churn rate"),
+      tableOutput("ltData"),
+      
+      # Boarder Implication and Future Ideas
+      h2("Boarder Implication"),
+      verbatimTextOutput("impli"),
+      h2("Data Quality"),
+      verbatimTextOutput("quality"),
+      h3("Harming Group"),
+      verbatimTextOutput("harm"),
+      h2("Future Ideas"),
+      verbatimTextOutput("future")
     )
   )
 )
@@ -98,6 +157,22 @@ server <- function(input, output) {
   # Reading the csv file
   churn <- read_delim('BankChurners.csv')
   
+  # ================= ABOUT  ==================
+  # the purpose of our data analysis
+  output$purpose <- renderPrint({
+    cat("Users will purchase a credit card (or sometimes multiple) and close their account once welcome benefits have been received, but before annual fees occur.")
+    cat("This is bad for banks because\nchurners don’t pay yearly interest and don’t usually pay the banks fees. This makes churners some of the bank’s least profitable customers…")
+    cat("The target audience for this project is\nbank business managers, who are responsible for consumer credit card portfolios. These businesses managers are looking for the following insights from consumer credit data:\n\n")
+    cat("1. What traits in customers are the key when identifying reasons for credit card churning?\n")
+    cat("2. How can bank managers predict the likelihood of credit card churning prior to customers dropping off a credit card?\n")
+    cat("3. How can bank managers better design credit card services to turn customers’ decisions around\n")
+  })
+  
+  # the source of our data
+  output$source <- renderPrint({
+    cat("Data Source: Kaggle dataset: static .csv file named “Predicting Credit Card Customer Segmentation”")
+  })
+
   # ================= FINANCE ===================
   
   # Render the INCOME radio buttons
@@ -346,7 +421,78 @@ server <- function(input, output) {
     social_table3_data
   })
   
+  # ==================== BIOLOGICAL ======================
+  #plot to show the relation between age gender and education level
+  output$bioPlot <- renderPlot({
+    iden <- input$identity
+    iden2 <- input$identity2
+    churn %>%
+      filter(Gender == iden) %>% 
+      filter(!Education_Level == "Unknown") %>% 
+      filter(Education_Level == iden2) %>% 
+      select(c("Education_Level", "Gender", "Customer_Age", "Attrition_Flag")) %>% 
+      ggplot() +
+      geom_histogram(aes(x = Customer_Age, fill = Attrition_Flag),bins = 45, position="dodge2") +
+      labs(title = "Amount of People By Age depending on Gender and Eduaction",
+           y = "Count",
+           x = 'Age')
+    
+  })
   
+  output$description <-  renderPrint({
+    #description of the histogram
+    cat("This histogram analyzes traits related to biology to determine if there is any indication of whether or not the customer\n")
+    cat("will churn or not. We analyze this by using the columns of Customer_Age, Gender, and Education_Level. Which helps us to\n")
+    cat("better visualise these factors relations to churning.")
+  })
+  
+  output$conclusion <-  renderPrint({
+    #description of the histogram
+    cat("Biological traits seem to have some indication on whether or not a customer will churn. Age seems to be slightly correlated with the highest percent of people who churn\n")
+    cat("falling into the age groups of 27-37 and 57-67. However, the Biological Trait of Gender doesn't seem to be a large indicator of whether a customer will churn. This information\n")
+    cat("can point to the fact that some actions are common at different ages. While gender is less accurate.")
+  })
+  
+  output$ltData <- renderTable({
+    churn %>%
+      #table to show highest churn rate based on age
+      filter(!Education_Level == "Unknown") %>% 
+      select(c("Education_Level", "Gender", "Customer_Age", "Attrition_Flag")) %>% 
+      group_by(Customer_Age, Attrition_Flag) %>% 
+      reframe(count = n(), .groups = "drop") %>% 
+      reframe(age = Customer_Age ,percent_who_churned = lag(count)/count) %>% 
+      filter(!is.na(percent_who_churned)) %>% 
+      arrange(desc(percent_who_churned)) %>% 
+      head(10)
+  })
+  
+  # =========== CONCLUSION ==============
+  # Implication
+  output$impli <- renderPrint({
+    cat("For bank business managers, our analysis provides two courses of action for implementing tangible improvements to the design of their credit card services.\n\n")
+    cat("1. When predicting churn rates, focus on traits such as transaction counts, transaction amounts, and age, while deprioritizing traits like income level and gender.\n")
+    cat("2. Design goal for credit card services should be centered around increasing transaction count/amount. This means reducing annual fees, and moving away from designing services\n")
+    cat("for a particular income level.")
+  })
+  
+  # Data quality
+  output$quality <- renderPrint({
+    cat("The data for this project comes in the form of a static .csv file named “Predicting Credit Card Customer Segmentation”. Dataset did contain a number of unknowns, but otherwise\n")
+    cat("required minimal manipulation to work with. This indicates that the data is reliable and gives unbiased results. The only reliability concern we noticed was the small relative\n")
+    cat("quantity of data entries on churn incidents.")
+  })
+  
+  # harming group
+  output$harm <- renderPrint({
+    cat("Insights gained from our analysis could lead to banking systems which mistake ordinary people for ‘churners’, this is a population group that stands to be inadvertently harmed\n")
+    cat("as a result of our analysis.")
+  })
+  
+  # future ideas
+  output$future <- renderPrint({
+    cat("Future ideas for improving the project include creating a machine learning model which uses the important traits revealed in the current version of our project. This model would\n")
+    cat("then be used to predict the likelihood of a user churning.")
+  })
 }
 
 # Run the application 
