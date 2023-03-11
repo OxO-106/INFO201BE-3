@@ -10,3 +10,7 @@ Daniel Li
 Miles Nelson Mayhew
 
 Zihan Chen
+
+## Link to Project
+
+https://zihanchen.shinyapps.io/PredictChurning/
